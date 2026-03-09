@@ -11,8 +11,9 @@ __pycache__/
 
 # Django
 db.sqlite3
-/media
-/staticfiles
+/media/
+/static/
+/staticfiles/
 *.log
 
 # Env / Secrets
@@ -22,7 +23,7 @@ db.sqlite3
 .env.development
 *.secret
 *.token
-# Note: .env.example should NOT be ignored - it's a template for other developers
+# Note: .env.template should NOT be ignored - it's a template for other developers
 
 # VSCode / Editor
 .vscode/
@@ -55,14 +56,15 @@ coverage.xml
 # Testing
 .pytest_cache/
 .tox/
-base_info_app/management
 
-# AI
-.github
+# Docker volumes (not the config files!)
+postgres_data/
+redis_data/
+videoflix_media/
+videoflix_static/
 
-# Docker
-Dockerfile
-.dockerignore
+# AI / Personal (copilot instructions - private)
+.github/
 
 # Other
 help.py
