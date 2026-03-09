@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Django
+db.sqlite3
+/media
+/staticfiles
+*.log
+
+# Env / Secrets
+.env
+.env.local
+.env.production
+.env.development
+*.secret
+*.token
+# Note: .env.example should NOT be ignored - it's a template for other developers
+
+# VSCode / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Virtual Envs
+venv/
+env/
+ENV/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Migrations (optional, depending on the workflow)
+**/migrations/*.pyc
+**/migrations/__pycache__/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Testing
+.pytest_cache/
+.tox/
+base_info_app/management
+
+# AI
+.github
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Other
+help.py
