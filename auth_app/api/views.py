@@ -10,8 +10,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
 from .tokens import generate_token
+from .permissions import IsActive
+
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
 class RegisterView(APIView):
@@ -69,4 +72,39 @@ class ActivateAccountView(APIView):
             user.save()
             return Response({'message': 'Account successfully activated.'}, status=status.HTTP_200_OK)
         return Response({'error': 'Invalid or expired activation link.'}, status=status.HTTP_400_BAD_REQUEST)
+   
     
+class CookieLoginView(TokenObtainPairView):
+    """
+    API view for user login with JWT tokens stored in HTTP-only cookies.
+    Returns access and refresh tokens in secure cookies along with user data.
+    """
+    
+    serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        refresh_token = response.data.get('refresh')
+        access_token = response.data.get('access')
+        user_data = response.data.get('user')
+        
+        response.set_cookie(
+            key='access', 
+            value=access_token, 
+            httponly=True,
+            secure=True,
+            samesite='Lax'
+        )
+        
+        response.set_cookie(
+            key='refresh', 
+            value=refresh_token, 
+            httponly=True,
+            secure=True,
+            samesite='Lax'
+        )
+        
+        response.data = {'detail': "Login successful", 'user': user_data}
+        
+        return response

@@ -51,6 +51,9 @@ gunicorn.ctl
 gunicorn.pid
 *.sock
 
+# Local instructions
+INSTRUCTIONS.md
+
 # Coverage reports
 htmlcov/
 .coverage

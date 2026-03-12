@@ -43,4 +43,25 @@ class RegisterSerializer(serializers.ModelSerializer):
         account.save()
         return account
     
+    
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom JWT token serializer that extends TokenObtainPairSerializer.
+    Includes additional user information (id, username, email) in the token response.
+    """
 
+    email = serializers.EmailField(write_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        del self.fields['username']
+
+    def validate(self, attrs):
+        attrs['username'] = attrs.get('email', '')
+        data = super().validate(attrs)
+        data['user'] = {
+            'id': self.user.id,
+            'username': self.user.username
+        }
+        
+        return data
