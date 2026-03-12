@@ -8,7 +8,8 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
 from .tokens import generate_token
@@ -108,3 +109,27 @@ class CookieLoginView(TokenObtainPairView):
         response.data = {'detail': "Login successful", 'user': user_data}
         
         return response
+
+
+class LogoutView(APIView):
+    """
+    API view for user logout.
+    Blacklists the refresh token and deletes authentication cookies for authenticated users.
+    """
+    
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.COOKIES.get('refresh')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+        except Exception:
+            pass
+        
+        response = Response({"detail": "Log-Out successful! All tokens will be deleted. Refresh token is now invalid."}, status=status.HTTP_200_OK)
+        response.delete_cookie('access', samesite='Lax')
+        response.delete_cookie('refresh', samesite='Lax')
+        return response
+    
