@@ -46,6 +46,11 @@ Thumbs.db
 **/migrations/*.pyc
 **/migrations/__pycache__/
 
+# Gunicorn runtime files
+gunicorn.ctl
+gunicorn.pid
+*.sock
+
 # Coverage reports
 htmlcov/
 .coverage
