@@ -35,7 +35,21 @@ services:
       - db
       - redis
 
-
+  rqworker:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: videoflix_rqworker
+    env_file: .env
+    command: python manage.py rqworker default
+    volumes:
+      - .:/app
+      - videoflix_media:/app/media
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+      - redis
 
 
 volumes:
