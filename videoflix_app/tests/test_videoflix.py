@@ -25,10 +25,10 @@ def create_user(email='user@example.com', password='Pass123!', is_staff=False):
 
 
 def auth_header(user):
-    """Returns a JWT Authorization header dict for the given user."""
+    """Sets the JWT access token cookie on the test client for the given user."""
     
-    token = RefreshToken.for_user(user).access_token
-    return {'HTTP_AUTHORIZATION': f'Bearer {token}'}
+    token = str(RefreshToken.for_user(user).access_token)
+    return {'HTTP_COOKIE': f'access={token}'}
 
 
 def create_video(title='Test Video'):

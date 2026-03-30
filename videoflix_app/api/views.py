@@ -5,12 +5,12 @@ from django.http import HttpResponse, Http404
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from videoflix_app.models import Video
 
 from .serializers import VideoUploadSerializer
 from .permissions import IsAdminOrStaff
+from auth_app.api.authentication import CookieJWTAuthentication
 
 
 class VideoUploadView(generics.CreateAPIView):
@@ -19,7 +19,7 @@ class VideoUploadView(generics.CreateAPIView):
     Requires JWT authentication. Only staff and superusers may upload.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated, IsAdminOrStaff]
     
     queryset = Video.objects.all()
@@ -32,7 +32,7 @@ class VideoListView(generics.ListAPIView):
     Requires JWT authentication.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     queryset = Video.objects.all()
@@ -48,7 +48,7 @@ class HLSManifestView(APIView):
     Requires JWT authentication.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution):
@@ -84,7 +84,7 @@ class HLSSegmentView(APIView):
     Requires JWT authentication.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution, segment):
