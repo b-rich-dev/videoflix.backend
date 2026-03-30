@@ -1,106 +1,106 @@
 # Videoflix – Backend
 
-REST-API für die Videoflix-Plattform. Gebaut mit **Django 6**, **Django REST Framework**, **SimpleJWT** und **ffmpeg**. Videos werden automatisch in HLS-Format (HTTP Live Streaming) in drei Auflösungen konvertiert und per Hintergrundjob verarbeitet.
+REST API for the Videoflix platform. Built with **Django 6**, **Django REST Framework**, **SimpleJWT** and **ffmpeg**. Videos are automatically converted to HLS format (HTTP Live Streaming) at three resolutions and processed via background jobs.
 
 ---
 
-## Inhaltsverzeichnis
+## Table of Contents
 
 - [Videoflix – Backend](#videoflix--backend)
-  - [Inhaltsverzeichnis](#inhaltsverzeichnis)
-  - [Technologie-Stack](#technologie-stack)
-  - [Voraussetzungen](#voraussetzungen)
-  - [Schnellstart mit Docker](#schnellstart-mit-docker)
-  - [Umgebungsvariablen (.env)](#umgebungsvariablen-env)
-  - [API-Endpunkte](#api-endpunkte)
-    - [Authentifizierung](#authentifizierung)
-      - [Registrierung – Request-Body](#registrierung--request-body)
-      - [Login – Request-Body](#login--request-body)
+  - [Table of Contents](#table-of-contents)
+  - [Tech Stack](#tech-stack)
+  - [Prerequisites](#prerequisites)
+  - [Quick Start with Docker](#quick-start-with-docker)
+  - [Environment Variables (.env)](#environment-variables-env)
+  - [API Endpoints](#api-endpoints)
+    - [Authentication](#authentication)
+      - [Registration – Request Body](#registration--request-body)
+      - [Login – Request Body](#login--request-body)
     - [Videos](#videos)
-      - [Video hochladen – Request (multipart/form-data)](#video-hochladen--request-multipartform-data)
-      - [Video-Listen-Antwort](#video-listen-antwort)
-  - [Authentifizierungskonzept](#authentifizierungskonzept)
-  - [HLS-Videokonvertierung](#hls-videokonvertierung)
-    - [Ablauf](#ablauf)
-    - [Ausgabestruktur](#ausgabestruktur)
-    - [Kodierungsparameter](#kodierungsparameter)
-  - [Projektstruktur](#projektstruktur)
-  - [Tests ausführen](#tests-ausführen)
-  - [Lokale Entwicklung (ohne Docker)](#lokale-entwicklung-ohne-docker)
+      - [Upload Video – Request (multipart/form-data)](#upload-video--request-multipartform-data)
+      - [Video List Response](#video-list-response)
+  - [Authentication Concept](#authentication-concept)
+  - [HLS Video Conversion](#hls-video-conversion)
+    - [Flow](#flow)
+    - [Output Structure](#output-structure)
+    - [Encoding Parameters](#encoding-parameters)
+  - [Project Structure](#project-structure)
+  - [Running Tests](#running-tests)
+  - [Local Development (without Docker)](#local-development-without-docker)
 
 ---
 
-## Technologie-Stack
+## Tech Stack
 
-| Komponente            | Version / Paket                   |
+| Component             | Version / Package                 |
 | --------------------- | --------------------------------- |
 | Python                | 3.12                              |
 | Django                | 6.0.3                             |
 | Django REST Framework | 3.16.1                            |
 | SimpleJWT             | 5.5.1                             |
-| Datenbank             | PostgreSQL (via psycopg2)         |
+| Database              | PostgreSQL (via psycopg2)         |
 | Cache / Queue         | Redis + django-redis + django-rq  |
-| Videokonvertierung    | ffmpeg (systemseitig installiert) |
+| Video Conversion      | ffmpeg (installed system-wide)    |
 | CORS                  | django-cors-headers 4.9.0         |
 | Static Files          | whitenoise 6.12.0                 |
 | Server                | Gunicorn 25.1.0                   |
-| Containerisierung     | Docker + Docker Compose           |
+| Containerization      | Docker + Docker Compose           |
 
 ---
 
-## Voraussetzungen
+## Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) installiert und gestartet
-- Eine `.env`-Datei im Projektverzeichnis (siehe [Umgebungsvariablen](#umgebungsvariablen-env))
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running
+- A `.env` file in the project directory (see [Environment Variables](#environment-variables-env))
 
 ---
 
-## Schnellstart mit Docker
+## Quick Start with Docker
 
 ```bash
-# 1. Repository klonen
+# 1. Clone the repository
 git clone https://github.com/b-rich-dev/videoflix.backend
 cd videoflix.backend
 
-# 2. .env-Datei anlegen (siehe Abschnitt "Umgebungsvariablen")
-cp .env.template .env   # oder manuell erstellen
+# 2. Create the .env file (see "Environment Variables" section)
+cp .env.template .env   # or create manually
 
-# 3. Container bauen und starten
+# 3. Build and start the containers
 docker compose up --build
 ```
 
-Das Entrypoint-Skript führt beim Start automatisch aus:
-- `collectstatic` – statische Dateien einsammeln
-- `makemigrations` + `migrate` – Datenbankmigrationen
-- Anlegen eines Superusers (Zugangsdaten aus `.env`)
-- Start von Gunicorn auf Port **8000**
+The entrypoint script automatically runs on startup:
+- `collectstatic` – collect static files
+- `makemigrations` + `migrate` – database migrations
+- Create a superuser (credentials from `.env`)
+- Start Gunicorn on port **8000**
 
-Parallel startet der `rqworker`-Container und verarbeitet Hintergrundjobs (Video­konvertierung).
+The `rqworker` container starts in parallel and processes background jobs (video conversion).
 
-> Die API ist danach unter `http://localhost:8000/api/` erreichbar.
-> Das Django-Admin-Interface ist unter `http://localhost:8000/admin/` erreichbar.
+> The API is then available at `http://localhost:8000/api/`.
+> The Django admin interface is available at `http://localhost:8000/admin/`.
 
 ---
 
-## Umgebungsvariablen (.env)
+## Environment Variables (.env)
 
-Erstelle eine `.env`-Datei im Projektverzeichnis mit folgendem Inhalt (Werte anpassen):
+Create a `.env` file in the project directory with the following content (adjust values as needed):
 
 ```env
 # Django
 DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_PASSWORD=sicheres-passwort
+DJANGO_SUPERUSER_PASSWORD=secure-password
 DJANGO_SUPERUSER_EMAIL=admin@example.com
 
-SECRET_KEY=dein-geheimer-django-schluessel
+SECRET_KEY=your-secret-django-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 CSRF_TRUSTED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
 
-# Datenbank (PostgreSQL)
+# Database (PostgreSQL)
 DB_NAME=videoflix_db
 DB_USER=videoflix_user
-DB_PASSWORD=sicheres-db-passwort
+DB_PASSWORD=secure-db-password
 DB_HOST=db
 DB_PORT=5432
 
@@ -110,40 +110,40 @@ REDIS_LOCATION=redis://redis:6379/1
 REDIS_PORT=6379
 REDIS_DB=0
 
-# E-Mail (SMTP)
+# Email (SMTP)
 EMAIL_HOST=mail.example.com
 EMAIL_PORT=587
 EMAIL_HOST_USER=noreply@example.com
-EMAIL_HOST_PASSWORD=email-passwort
+EMAIL_HOST_PASSWORD=email-password
 EMAIL_USE_TLS=True
 EMAIL_USE_SSL=False
 DEFAULT_FROM_EMAIL=noreply@example.com
 
-# Frontend-URL (für Links in E-Mails)
+# Frontend URL (for links in emails)
 FRONTEND_URL=http://127.0.0.1:5500
 ```
 
-> **Hinweis:** Die `.env`-Datei niemals in die Versionskontrolle (Git) einchecken!
+> **Note:** Never commit the `.env` file to version control (Git)!
 
 ---
 
-## API-Endpunkte
+## API Endpoints
 
-Alle Endpunkte sind unter dem Präfix `/api/` erreichbar.
+All endpoints are available under the `/api/` prefix.
 
-### Authentifizierung
+### Authentication
 
-| Methode | Endpunkt                                  | Beschreibung                                    | Auth erforderlich |
-| ------- | ----------------------------------------- | ----------------------------------------------- | ----------------- |
-| POST    | `/api/register/`                          | Neuen Benutzer registrieren                     | Nein              |
-| GET     | `/api/activate/<uidb64>/<token>/`         | E-Mail-Adresse aktivieren (per Link aus E-Mail) | Nein              |
-| POST    | `/api/login/`                             | Einloggen, JWT-Cookies werden gesetzt           | Nein              |
-| POST    | `/api/logout/`                            | Ausloggen, Refresh-Token wird invalidiert       | Ja (Cookie)       |
-| POST    | `/api/token/refresh/`                     | Access-Token per Refresh-Token erneuern         | Ja (Cookie)       |
-| POST    | `/api/password_reset/`                    | Passwort-Reset-E-Mail anfordern                 | Nein              |
-| POST    | `/api/password_confirm/<uidb64>/<token>/` | Neues Passwort setzen                           | Nein              |
+| Method | Endpoint                                  | Description                                       | Auth Required |
+| ------ | ----------------------------------------- | ------------------------------------------------- | ------------- |
+| POST   | `/api/register/`                          | Register a new user                               | No            |
+| GET    | `/api/activate/<uidb64>/<token>/`         | Activate email address (via link from email)      | No            |
+| POST   | `/api/login/`                             | Log in, JWT cookies are set                       | No            |
+| POST   | `/api/logout/`                            | Log out, refresh token is invalidated             | Yes (Cookie)  |
+| POST   | `/api/token/refresh/`                     | Renew access token using refresh token            | Yes (Cookie)  |
+| POST   | `/api/password_reset/`                    | Request a password reset email                    | No            |
+| POST   | `/api/password_confirm/<uidb64>/<token>/` | Set a new password                                | No            |
 
-#### Registrierung – Request-Body
+#### Registration – Request Body
 
 ```json
 {
@@ -153,7 +153,7 @@ Alle Endpunkte sind unter dem Präfix `/api/` erreichbar.
 }
 ```
 
-#### Login – Request-Body
+#### Login – Request Body
 
 ```json
 {
@@ -162,42 +162,42 @@ Alle Endpunkte sind unter dem Präfix `/api/` erreichbar.
 }
 ```
 
-Nach erfolgreichem Login werden zwei **HTTP-Only-Cookies** gesetzt:
-- `access` – Access-Token (Gültigkeit: 60 Minuten)
-- `refresh` – Refresh-Token (Gültigkeit: 7 Tage)
+After a successful login, two **HTTP-Only cookies** are set:
+- `access` – access token (valid for 60 minutes)
+- `refresh` – refresh token (valid for 7 days)
 
 ---
 
 ### Videos
 
-| Methode | Endpunkt                                 | Beschreibung                                | Berechtigung             |
-| ------- | ---------------------------------------- | ------------------------------------------- | ------------------------ |
-| POST    | `/api/upload/`                           | Video hochladen                             | Eingeloggt + Staff/Admin |
-| GET     | `/api/video/`                            | Liste aller Videos abrufen                  | Eingeloggt               |
-| GET     | `/api/video/<id>/<auflösung>/index.m3u8` | HLS-Playlist für eine Auflösung abrufen     | Eingeloggt               |
-| GET     | `/api/video/<id>/<auflösung>/<segment>/` | Einzelnes HLS-Segment (`.ts`-Datei) abrufen | Eingeloggt               |
+| Method | Endpoint                                    | Description                                  | Permission               |
+| ------ | ------------------------------------------- | -------------------------------------------- | ------------------------ |
+| POST   | `/api/upload/`                              | Upload a video                               | Logged in + Staff/Admin  |
+| GET    | `/api/video/`                               | Retrieve list of all videos                  | Logged in                |
+| GET    | `/api/video/<id>/<resolution>/index.m3u8`   | Retrieve HLS playlist for a resolution       | Logged in                |
+| GET    | `/api/video/<id>/<resolution>/<segment>/`   | Retrieve a single HLS segment (`.ts` file)   | Logged in                |
 
-**Gültige Auflösungen:** `480p`, `720p`, `1080p`
+**Valid resolutions:** `480p`, `720p`, `1080p`
 
-#### Video hochladen – Request (multipart/form-data)
+#### Upload Video – Request (multipart/form-data)
 
-| Feld          | Typ    | Pflicht | Beschreibung           |
-| ------------- | ------ | ------- | ---------------------- |
-| `title`       | string | Ja      | Titel des Videos       |
-| `description` | string | Ja      | Beschreibung           |
-| `category`    | string | Ja      | Kategorie              |
-| `file`        | file   | Ja      | Videodatei (.mp4 etc.) |
+| Field         | Type   | Required | Description            |
+| ------------- | ------ | -------- | ---------------------- |
+| `title`       | string | Yes      | Title of the video     |
+| `description` | string | Yes      | Description            |
+| `category`    | string | Yes      | Category               |
+| `file`        | file   | Yes      | Video file (.mp4 etc.) |
 
-#### Video-Listen-Antwort
+#### Video List Response
 
 ```json
 [
   {
     "id": 1,
     "created_at": "2026-03-30T12:00:00Z",
-    "title": "Beispielvideo",
-    "description": "Eine kurze Beschreibung",
-    "thumbnail_url": "/media/thumbnails/beispielvideo_thumbnail.jpg",
+    "title": "Sample Video",
+    "description": "A short description",
+    "thumbnail_url": "/media/thumbnails/sample_thumbnail.jpg",
     "category": "Action"
   }
 ]
@@ -205,40 +205,40 @@ Nach erfolgreichem Login werden zwei **HTTP-Only-Cookies** gesetzt:
 
 ---
 
-## Authentifizierungskonzept
+## Authentication Concept
 
-Die API verwendet **JWT-Tokens**, die ausschließlich in **HTTP-Only-Cookies** gespeichert werden. Das verhindert den Zugriff durch JavaScript und schützt vor XSS-Angriffen.
+The API uses **JWT tokens** stored exclusively in **HTTP-Only cookies**. This prevents access by JavaScript and protects against XSS attacks.
 
-- **Access-Token** (`access`-Cookie): Wird bei jedem authentifizierten Request mitgeschickt, gültig für 60 Minuten.
-- **Refresh-Token** (`refresh`-Cookie): Wird beim `/api/token/refresh/`-Endpunkt genutzt, um einen neuen Access-Token zu erhalten. Gültig für 7 Tage. Nach Rotation wird der alte Token in die Blacklist eingetragen.
-- **Logout**: Trägt den Refresh-Token in die Blacklist ein, sodass er nicht mehr verwendet werden kann.
+- **Access token** (`access` cookie): Sent with every authenticated request, valid for 60 minutes.
+- **Refresh token** (`refresh` cookie): Used at the `/api/token/refresh/` endpoint to obtain a new access token. Valid for 7 days. After rotation, the old token is added to the blacklist.
+- **Logout**: Adds the refresh token to the blacklist so it can no longer be used.
 
-Die benutzerdefinierte Klasse `CookieJWTAuthentication` (`auth_app/api/authentication.py`) liest den Access-Token automatisch aus dem `access`-Cookie statt aus dem `Authorization`-Header.
+The custom class `CookieJWTAuthentication` (`auth_app/api/authentication.py`) automatically reads the access token from the `access` cookie instead of the `Authorization` header.
 
 ---
 
-## HLS-Videokonvertierung
+## HLS Video Conversion
 
-Nach dem Upload eines Videos wird automatisch ein Hintergrundjob per **django-rq** (Redis Queue) gestartet, der das Video mit **ffmpeg** in das HLS-Format konvertiert.
+After a video is uploaded, a background job is automatically started via **django-rq** (Redis Queue), which converts the video to HLS format using **ffmpeg**.
 
-### Ablauf
+### Flow
 
 ```
 Upload (POST /api/upload/)
   └─► Signal: post_save (videoflix_app/signals.py)
-        └─► RQ-Job: convert_to_hls (videoflix_app/tasks.py)
-              └─► ffmpeg konvertiert in 3 Auflösungen
+        └─► RQ Job: convert_to_hls (videoflix_app/tasks.py)
+              └─► ffmpeg converts to 3 resolutions
 ```
 
-### Ausgabestruktur
+### Output Structure
 
-Für jede hochgeladene Datei `media/videos/beispiel.mp4` entsteht folgende Struktur:
+For each uploaded file `media/videos/example.mp4`, the following structure is created:
 
 ```
 media/videos/
-  beispiel.mp4                    ← Originaldatei
-  beispiel/
-    master.m3u8                   ← Master-Playlist (referenziert alle Auflösungen)
+  example.mp4                     ← Original file
+  example/
+    master.m3u8                   ← Master playlist (references all resolutions)
     480p/
       index.m3u8
       segment_000.ts
@@ -252,55 +252,55 @@ media/videos/
       index.m3u8
       segment_000.ts
       ...
-  beispiel_thumbnail.jpg          ← Auto-generiertes Vorschaubild (Frame bei 1s)
+  example_thumbnail.jpg           ← Auto-generated preview image (frame at 1s)
 ```
 
-### Kodierungsparameter
+### Encoding Parameters
 
-| Auflösung | Abmessungen | Ziel-Bitrate | Codec Video | Codec Audio |
-| --------- | ----------- | ------------ | ----------- | ----------- |
-| 480p      | 854 × 480   | 1.000 kbps   | H.264       | AAC         |
-| 720p      | 1280 × 720  | 3.000 kbps   | H.264       | AAC         |
-| 1080p     | 1920 × 1080 | 6.000 kbps   | H.264       | AAC         |
+| Resolution | Dimensions  | Target Bitrate | Video Codec | Audio Codec |
+| ---------- | ----------- | -------------- | ----------- | ----------- |
+| 480p       | 854 × 480   | 1,000 kbps     | H.264       | AAC         |
+| 720p       | 1280 × 720  | 3,000 kbps     | H.264       | AAC         |
+| 1080p      | 1920 × 1080 | 6,000 kbps     | H.264       | AAC         |
 
-Segment-Länge: **10 Sekunden** pro `.ts`-Datei.
+Segment length: **10 seconds** per `.ts` file.
 
 ---
 
-## Projektstruktur
+## Project Structure
 
 ```
 videoflix.backend/
 │
-├── auth_app/                    # Authentifizierungs-App
+├── auth_app/                    # Authentication app
 │   ├── api/
 │   │   ├── authentication.py    # CookieJWTAuthentication
-│   │   ├── serializers.py       # Registrierungs-Serializer
-│   │   ├── tokens.py            # Token-Hilfsfunktionen
-│   │   ├── urls.py              # Auth-URL-Konfiguration
-│   │   └── views.py             # Alle Auth-Views
+│   │   ├── serializers.py       # Registration serializer
+│   │   ├── tokens.py            # Token helper functions
+│   │   ├── urls.py              # Auth URL configuration
+│   │   └── views.py             # All auth views
 │   ├── templates/auth_app/
 │   │   ├── activation_email.html
 │   │   └── password_reset_email.html
-│   └── tests/                   # Test-Suite Auth
+│   └── tests/                   # Auth test suite
 │
-├── videoflix_app/               # Video-App
+├── videoflix_app/               # Video app
 │   ├── api/
 │   │   ├── serializers.py       # VideoUploadSerializer
-│   │   ├── urls.py              # Video-URL-Konfiguration
+│   │   ├── urls.py              # Video URL configuration
 │   │   └── views.py             # VideoListView, HLSManifestView, …
-│   ├── models.py                # Video-Modell
-│   ├── signals.py               # post_save / post_delete Handler
-│   ├── tasks.py                 # RQ-Jobs: convert_to_hls, create_video_thumbnail
-│   └── tests/                   # Test-Suite Videos
+│   ├── models.py                # Video model
+│   ├── signals.py               # post_save / post_delete handlers
+│   ├── tasks.py                 # RQ jobs: convert_to_hls, create_video_thumbnail
+│   └── tests/                   # Video test suite
 │
 ├── core/
-│   ├── settings.py              # Django-Konfiguration
-│   └── urls.py                  # Root-URL-Konfiguration
+│   ├── settings.py              # Django configuration
+│   └── urls.py                  # Root URL configuration
 │
-├── media/                       # Hochgeladene Dateien – wird zur Laufzeit von Docker angelegt (nicht in Git)
-├── static/                      # Statische Dateien
-├── .env                         # Umgebungsvariablen (nicht in Git)
+├── media/                       # Uploaded files – created at runtime by Docker (not in Git)
+├── static/                      # Static files
+├── .env                         # Environment variables (not in Git)
 ├── backend.Dockerfile
 ├── backend.entrypoint.sh
 ├── docker-compose.yml
@@ -309,55 +309,55 @@ videoflix.backend/
 
 ---
 
-## Tests ausführen
+## Running Tests
 
-Die Tests laufen innerhalb des Docker-Containers:
+Tests run inside the Docker container:
 
 ```bash
-# Alle Tests ausführen
+# Run all tests
 docker compose exec web python manage.py test
 
-# Nur Auth-Tests
+# Auth tests only
 docker compose exec web python manage.py test auth_app
 
-# Nur Video-Tests
+# Video tests only
 docker compose exec web python manage.py test videoflix_app
 ```
 
-Die Test-Suite umfasst aktuell **60 Tests** (47 Auth + 13 Video):
+The test suite currently contains **60 tests** (47 auth + 13 video):
 
-| Bereich             | Tests |
+| Area                | Tests |
 |---------------------|-------|
-| Registrierung       | 11    |
+| Registration        | 11    |
 | Login / Logout      | 12    |
-| Account-Aktivierung | 7     |
-| Token-Refresh       | 5     |
-| Passwort-Reset      | 12    |
+| Account Activation  | 7     |
+| Token Refresh       | 5     |
+| Password Reset      | 12    |
 | Videos              | 13    |
 
 ---
 
-## Lokale Entwicklung (ohne Docker)
+## Local Development (without Docker)
 
-> Voraussetzung: Python 3.x, PostgreSQL und Redis müssen lokal laufen. `ffmpeg` muss im `PATH` verfügbar sein.
+> Requirements: Python 3.12, PostgreSQL and Redis must be running locally. `ffmpeg` must be available in the `PATH`.
 
 ```bash
-# Virtuelle Umgebung erstellen
+# Create virtual environment
 python -m venv env
 
-# Virtuelle Umgebung aktivieren
+# Activate virtual environment
 .\env\Scripts\Activate.ps1          # Windows
 source env/bin/activate             # Linux/macOS
 
-# Abhängigkeiten installieren
+# Install dependencies
 pip install -r requirements.txt
 
-# Datenbank migrieren
+# Run database migrations
 python manage.py migrate
 
-# Entwicklungsserver starten
+# Start development server
 python manage.py runserver
 
-# RQ-Worker in einem zweiten Terminal starten
+# Start RQ worker in a second terminal
 python manage.py rqworker default
 ```
