@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
 from .tokens import generate_token, password_reset_token
+from .authentication import CookieJWTAuthentication
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -115,7 +116,8 @@ class LogoutView(APIView):
     API view for user logout.
     Blacklists the refresh token and deletes authentication cookies for authenticated users.
     """
-    
+
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
