@@ -51,4 +51,29 @@ class HLSManifestView(APIView):
             content = f.read()
 
         return HttpResponse(content, content_type='application/vnd.apple.mpegurl')
-        
+       
+       
+class HLSSegmentView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, movie_id, resolution, segment):
+        if resolution not in VALID_RESOLUTIONS:
+            raise Http404('Invalid resolution.')
+
+        try:
+            video = Video.objects.get(pk=movie_id)
+        except Video.DoesNotExist:
+            raise Http404('Video not found.')
+
+        base, _ = os.path.splitext(video.file.path)
+        segment_path = os.path.join(base, resolution, segment)
+
+        if not os.path.isfile(segment_path):
+            raise Http404('HLS segment not found.')
+
+        with open(segment_path, 'rb') as f:
+            content = f.read()
+
+        return HttpResponse(content, content_type='video/MP2T') 
+    
