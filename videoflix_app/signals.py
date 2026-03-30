@@ -1,26 +1,34 @@
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
-from .models import Video
 import os
 import shutil
 import django_rq
+
+from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete
+
+from .models import Video
 from .tasks import convert_to_hls, create_video_thumbnail
 
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
-    print('Video wurde gespeichert:', instance.title)
+    """
+    Signal handler triggered after a Video instance is saved.
+    On creation, enqueues thumbnail generation and HLS conversion tasks
+    into the default RQ queue.
+    """
+
     if created:
         queue = django_rq.get_queue('default')
         queue.enqueue(create_video_thumbnail, instance.file.path, instance.thumbnail, second=1)
         queue.enqueue(convert_to_hls, instance.file.path)
 
-        print(f"Video '{instance.title}' wurde zur HLS-Konvertierung in die Queue eingereiht.")
-
 
 @receiver(post_delete, sender=Video)
 def auto_delete_video_on_delete(sender, instance, **kwargs):
-    print('Video wurde gelöscht:', instance.title)
+    """
+    Signal handler triggered after a Video instance is deleted.
+    Removes the original video file and the associated HLS output directory from disk.
+    """
 
     if instance.file:
         original = instance.file.path

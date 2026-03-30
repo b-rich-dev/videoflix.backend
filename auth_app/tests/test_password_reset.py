@@ -1,9 +1,11 @@
-from django.test import TestCase
 from django.urls import reverse
+from django.test import TestCase
 from django.contrib.auth.models import User
-from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
 from unittest.mock import patch
+
 from auth_app.api.tokens import password_reset_token
 
 PASSWORD_RESET_URL = reverse('password_reset')
@@ -11,6 +13,8 @@ LOGIN_URL = reverse('login')
 
 
 def create_active_user(email='reset@example.com', password='OldPass123!'):
+    """Creates and returns an active user with the given email and password."""
+    
     user = User.objects.create_user(username=email, email=email, password=password)
     user.is_active = True
     user.save()
@@ -18,12 +22,15 @@ def create_active_user(email='reset@example.com', password='OldPass123!'):
 
 
 def confirm_url(user):
+    """Generates a valid password reset confirmation URL for the given user."""
+    
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = password_reset_token.make_token(user)
     return reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
 
 
 class PasswordResetRequestTests(TestCase):
+    """Tests for the password reset request endpoint that sends a reset email."""
 
     @patch('auth_app.api.views.send_mail')
     def test_known_email_returns_200(self, mock_mail):
@@ -47,6 +54,7 @@ class PasswordResetRequestTests(TestCase):
 
 
 class PasswordResetConfirmTests(TestCase):
+    """Tests for the password reset confirmation endpoint that validates the token and sets a new password."""
 
     def test_valid_token_returns_200(self):
         user = create_active_user()

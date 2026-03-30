@@ -1,15 +1,24 @@
 import os
+
+from django.http import HttpResponse, Http404
+
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.http import HttpResponse, Http404
+
 from videoflix_app.models import Video
+
 from .serializers import VideoUploadSerializer
 from .permissions import IsAdminOrStaff
 
 
-class VideoUploadView(generics.ListCreateAPIView):
+class VideoUploadView(generics.CreateAPIView):
+    """
+    API view for uploading new videos.
+    Requires JWT authentication. Only staff and superusers may upload.
+    """
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsAdminOrStaff]
     
@@ -18,6 +27,11 @@ class VideoUploadView(generics.ListCreateAPIView):
 
 
 class VideoListView(generics.ListAPIView):
+    """
+    API view for listing all available videos.
+    Requires JWT authentication.
+    """
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
@@ -29,10 +43,21 @@ VALID_RESOLUTIONS = {'480p', '720p', '1080p'}
 
 
 class HLSManifestView(APIView):
+    """
+    API view for serving the HLS index playlist for a specific video and resolution.
+    Requires JWT authentication.
+    """
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution):
+        """
+        Returns the index.m3u8 playlist for the given video and resolution.
+        Raises 404 if the resolution is invalid, the video does not exist,
+        or the manifest file has not been generated yet.
+        """
+        
         if resolution not in VALID_RESOLUTIONS:
             raise Http404('Invalid resolution.')
 
@@ -54,10 +79,21 @@ class HLSManifestView(APIView):
        
        
 class HLSSegmentView(APIView):
+    """
+    API view for serving individual HLS transport stream segments (.ts files).
+    Requires JWT authentication.
+    """
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution, segment):
+        """
+        Returns the binary content of the requested .ts segment file.
+        Raises 404 if the resolution is invalid, the video does not exist,
+        or the segment file is not found.
+        """
+        
         if resolution not in VALID_RESOLUTIONS:
             raise Http404('Invalid resolution.')
 

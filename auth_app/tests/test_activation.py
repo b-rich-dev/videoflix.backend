@@ -1,12 +1,15 @@
-from django.test import TestCase
 from django.urls import reverse
+from django.test import TestCase
 from django.contrib.auth.models import User
-from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
 from auth_app.api.tokens import generate_token
 
 
 def create_inactive_user(email='activate@example.com', password='StrongPass123!'):
+    """Creates and returns an inactive user with the given email and password."""
+    
     user = User.objects.create_user(username=email, email=email, password=password)
     user.is_active = False
     user.save()
@@ -14,12 +17,15 @@ def create_inactive_user(email='activate@example.com', password='StrongPass123!'
 
 
 def activation_url(user):
+    """Generates a valid activation URL for the given user."""
+    
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = generate_token.make_token(user)
     return reverse('activate', kwargs={'uidb64': uid, 'token': token})
 
 
 class ActivationSuccessTests(TestCase):
+    """Tests for successful account activation via a valid activation link."""
 
     def test_valid_link_returns_200(self):
         user = create_inactive_user()
@@ -39,6 +45,7 @@ class ActivationSuccessTests(TestCase):
 
 
 class ActivationFailureTests(TestCase):
+    """Tests for account activation failure cases such as invalid tokens, UIDs, or reuse of links."""
 
     def test_invalid_token_returns_400(self):
         user = create_inactive_user()

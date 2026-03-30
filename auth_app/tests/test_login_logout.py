@@ -1,12 +1,15 @@
-from django.test import TestCase
 from django.urls import reverse
+from django.test import TestCase
 from django.contrib.auth.models import User
+
 
 LOGIN_URL = reverse('login')
 LOGOUT_URL = reverse('logout')
 
 
 def create_active_user(email='user@example.com', password='StrongPass123!'):
+    """Creates and returns an active user with the given email and password."""
+    
     user = User.objects.create_user(username=email, email=email, password=password)
     user.is_active = True
     user.save()
@@ -14,6 +17,7 @@ def create_active_user(email='user@example.com', password='StrongPass123!'):
 
 
 class LoginSuccessTests(TestCase):
+    """Tests for successful login with valid credentials."""
 
     def setUp(self):
         self.user = create_active_user()
@@ -50,6 +54,7 @@ class LoginSuccessTests(TestCase):
 
 
 class LoginFailureTests(TestCase):
+    """Tests for login failure cases such as wrong credentials, unknown email, or inactive accounts."""
 
     def setUp(self):
         self.user = create_active_user()
@@ -88,6 +93,7 @@ class LoginFailureTests(TestCase):
 
 
 class LogoutTests(TestCase):
+    """Tests for logout behaviour including cookie deletion and unauthenticated access."""
 
     def setUp(self):
         self.user = create_active_user()

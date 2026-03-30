@@ -1,9 +1,21 @@
-import subprocess
 import os
+import subprocess
+
 from django.core.files.base import ContentFile
 
 
 def create_video_thumbnail(source, thumbnail_field, second=1):
+    """
+    Extracts a single frame from the video at the given timestamp and saves it
+    as a JPEG thumbnail via the provided ImageField.
+    The temporary file is removed from disk after saving.
+
+    Args:
+        source: Absolute path to the source video file.
+        thumbnail_field: The ImageField instance to save the thumbnail to.
+        second: Timestamp in seconds at which to capture the frame. Defaults to 1.
+    """
+    
     base, _ = os.path.splitext(os.path.basename(source))
     thumbnail_filename = f"{base}_thumbnail.jpg"
     thumbnail_path = os.path.join(os.path.dirname(source), thumbnail_filename)
@@ -22,7 +34,16 @@ def create_video_thumbnail(source, thumbnail_field, second=1):
 
 
 def convert_to_hls(source):
-    """Konvertiert ein Video in das HLS-Format (480p, 720p, 1080p) und erstellt eine Master-Playlist."""
+    """
+    Converts a video file into HLS format at three resolutions (480p, 720p, 1080p).
+    Each resolution is stored in a separate subdirectory next to the source file,
+    containing an index.m3u8 playlist and segmented .ts files (10s each).
+    A master.m3u8 playlist referencing all resolutions is written to the base directory.
+
+    Args:
+        source: Absolute path to the source video file.
+    """
+    
     base, _ = os.path.splitext(source)
 
     resolutions = [

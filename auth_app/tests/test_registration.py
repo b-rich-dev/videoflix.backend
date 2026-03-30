@@ -1,6 +1,7 @@
-from django.test import TestCase
 from django.urls import reverse
+from django.test import TestCase
 from django.contrib.auth.models import User
+
 from unittest.mock import patch
 
 
@@ -14,6 +15,7 @@ VALID_PAYLOAD = {
 
 
 class RegistrationSuccessTests(TestCase):
+    """Tests for successful user registration with valid input data."""
 
     @patch('auth_app.api.views.send_mail')
     def test_registration_returns_201(self, mock_mail):
@@ -52,6 +54,7 @@ class RegistrationSuccessTests(TestCase):
 
 
 class RegistrationValidationTests(TestCase):
+    """Tests for registration validation errors such as missing fields, duplicate email, or mismatched passwords."""
 
     def test_missing_email_returns_400(self):
         payload = {'password': 'StrongPass123!', 'confirmed_password': 'StrongPass123!'}

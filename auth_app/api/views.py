@@ -1,21 +1,20 @@
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.utils.encoding import force_bytes, force_str
 from django.conf import settings
+from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-
-from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
-from .tokens import generate_token, password_reset_token
-from .authentication import CookieJWTAuthentication
-
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .authentication import CookieJWTAuthentication
+from .tokens import generate_token, password_reset_token
+from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
 
 
 class RegisterView(APIView):
@@ -27,7 +26,14 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
+        """
+        Creates a new inactive user account, generates an activation token,
+        and sends a confirmation email with the activation link.
+        Returns 201 with user data and token on success, 400 on validation errors.
+        """
+        
         serializer = RegisterSerializer(data=request.data)
+        
         if serializer.is_valid():
             user = serializer.save()
             uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -59,9 +65,18 @@ class RegisterView(APIView):
 
 
 class ActivateAccountView(APIView):
+    """
+    API view for activating a user account via email link.
+    Validates the UID and token from the activation email and sets the user as active.
+    """
+
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
+        """
+        Activates the user account if the provided UID and token are valid.
+        Returns 200 on success, 400 if the link is invalid or expired.
+        """
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
@@ -85,6 +100,11 @@ class CookieLoginView(TokenObtainPairView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
+        """
+        Authenticates the user and stores the access and refresh JWT tokens
+        in HTTP-only secure cookies. Returns user data in the response body.
+        """
+        
         response = super().post(request, *args, **kwargs)
         refresh_token = response.data.get('refresh')
         access_token = response.data.get('access')
@@ -121,6 +141,10 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """
+        Blacklists the refresh token from the cookie and deletes both
+        access and refresh cookies. Returns 200 on success.
+        """
         try:
             refresh_token = request.COOKIES.get('refresh')
             if refresh_token:
@@ -142,8 +166,14 @@ class CookieTokenRefreshView(TokenRefreshView):
     """
 
     def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get('refresh')
+        """
+        Reads the refresh token from the cookie, validates it, and issues a new
+        access token stored in a secure HTTP-only cookie.
+        Returns 400 if no refresh cookie is present, 401 if the token is invalid.
+        """
         
+        refresh_token = request.COOKIES.get('refresh')
+
         if refresh_token is None:
             return Response({'detail': 'Refresh token not found.'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -176,7 +206,14 @@ class PasswordResetView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """
+        Generates a password reset token for the given email address and sends
+        a reset link via email. Returns 200 for both known and unknown emails
+        to prevent user enumeration. Returns 400 if no email is provided.
+        """
+        
         email = request.data.get('email')
+        
         if not email:
             return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -213,6 +250,12 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, uidb64, token):
+        """
+        Validates the UID and reset token, then sets the new password if both
+        new_password and confirm_password are present and match.
+        Returns 200 on success, 400 for any invalid input or token.
+        """
+        
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)

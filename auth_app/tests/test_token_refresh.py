@@ -1,5 +1,5 @@
-from django.test import TestCase
 from django.urls import reverse
+from django.test import TestCase
 from django.contrib.auth.models import User
 
 LOGIN_URL = reverse('login')
@@ -7,6 +7,8 @@ REFRESH_URL = reverse('token_refresh')
 
 
 def create_active_user(email='refresh@example.com', password='StrongPass123!'):
+    """Creates and returns an active user with the given email and password."""
+    
     user = User.objects.create_user(username=email, email=email, password=password)
     user.is_active = True
     user.save()
@@ -14,6 +16,7 @@ def create_active_user(email='refresh@example.com', password='StrongPass123!'):
 
 
 class TokenRefreshSuccessTests(TestCase):
+    """Tests for successful token refresh using a valid refresh cookie."""
 
     def setUp(self):
         create_active_user()
@@ -40,6 +43,7 @@ class TokenRefreshSuccessTests(TestCase):
 
 
 class TokenRefreshFailureTests(TestCase):
+    """Tests for token refresh failure cases such as missing or invalid refresh cookies."""
 
     def test_refresh_without_cookie_returns_400(self):
         response = self.client.post(REFRESH_URL, secure=True)
