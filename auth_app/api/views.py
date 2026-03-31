@@ -38,7 +38,7 @@ class RegisterView(APIView):
             user = serializer.save()
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = generate_token.make_token(user)
-            activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
+            activation_link = f"{settings.FRONTEND_URL}/pages/auth/activate.html?uid={uid}&token={token}"
             message = render_to_string('auth_app/activation_email.html', {
                 'name': user.email.split('@')[0],
                 'activation_link': activation_link,
@@ -224,7 +224,7 @@ class PasswordResetView(APIView):
         
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = password_reset_token.make_token(user)
-        reset_link = f"{settings.FRONTEND_URL}/password-reset/{uid}/{token}"
+        reset_link = f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html?uid={uid}&token={token}"
         message = render_to_string('auth_app/password_reset_email.html', {
             'name': user.email.split('@')[0],
             'reset_link': reset_link,
